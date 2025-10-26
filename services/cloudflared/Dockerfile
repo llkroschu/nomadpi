@@ -1,4 +1,4 @@
-FROM busybox:1.36.1-uclibc as busybox
+FROM --platform=linux/arm64 busybox:1.36.1-uclibc as busybox
 FROM cloudflare/cloudflared:latest
 COPY --from=busybox /bin/sh /bin/sh
 COPY --from=busybox /bin/cat /bin/cat

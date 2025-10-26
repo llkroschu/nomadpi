@@ -1,4 +1,4 @@
-FROM dalehumby/openwakeword-rhasspy
+FROM --platform=linux/arm64 dalehumby/openwakeword-rhasspy
 
 RUN pip3 install --force-reinstall openwakeword
 RUN pip3 install aiohttp resampy

@@ -8,29 +8,34 @@ ARG TAG_SUFFIX=default
 #### Stage BASE ########################################################################################################
 FROM --platform=${ARCH} node:${NODE_VERSION}-${OS} AS base
 
-# Copy scripts
-COPY scripts/*.sh /tmp/
+# Install base tools FIRST
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    tzdata \
+    curl \
+    nano \
+    wget \
+    git \
+    openssl \
+    openssh-client \
+    ca-certificates \
+    # Add sudo here, needed for group membership checks later potentially
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install tools, create Node-RED app and data dir, add user and set rights
-RUN set -ex && \
-    apt-get update && apt-get install -y \
-        bash \
-        tzdata \
-        curl \
-        nano \
-        wget \
-        git \
-        openssl \
-        openssh-client \
-        ca-certificates && \
-    mkdir -p /usr/src/node-red /data && \
-    deluser --remove-home node && \
-    # adduser --home /usr/src/node-red --disabled-password --no-create-home node-red --uid 1000 && \
-    useradd --home-dir /usr/src/node-red --uid 1000 node-red && \
-    chown -R node-red:root /data && chmod -R g+rwX /data && \
-    chown -R node-red:root /usr/src/node-red && chmod -R g+rwX /usr/src/node-red
-    # chown -R node-red:node-red /data && \
-    # chown -R node-red:node-red /usr/src/node-red
+# Create directories, groups, user, and set initial permissions separately
+RUN mkdir -p /usr/src/node-red /data && \
+    groupadd -f -g 997 gpio || true && \
+    groupadd -f dialout || true && \
+    (deluser --remove-home node || true) && \
+    useradd --home-dir /usr/src/node-red --uid 1000 -G dialout,gpio,sudo node-red && \
+    chown -R node-red:dialout /data && chmod -R g+rwX /data && \
+    chown -R node-red:dialout /usr/src/node-red && chmod -R g+rwX /usr/src/node-red && \
+    # Allow sudo without password for node-red user INSIDE container (if needed later)
+    echo "node-red ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Copy scripts needed early
+COPY scripts/*.sh /tmp/
 
 # Set work directory
 WORKDIR /usr/src/node-red
@@ -40,9 +45,9 @@ COPY known_hosts.sh .
 RUN ./known_hosts.sh /etc/ssh/ssh_known_hosts && rm /usr/src/node-red/known_hosts.sh
 RUN echo "PubkeyAcceptedKeyTypes +ssh-rsa" >> /etc/ssh/ssh_config
 
-# package.json contains Node-RED NPM module and node dependencies
+# Copy package files and entrypoint
 COPY package.json .
-COPY flows.json /data
+# COPY flows.json /data # flows.json is often better mounted as a volume
 COPY scripts/entrypoint.sh .
 
 #### Stage BUILD #######################################################################################################
@@ -79,14 +84,37 @@ LABEL org.label-schema.build-date=${BUILD_DATE} \
 COPY --from=build /usr/src/node-red/prod_node_modules ./node_modules
 
 # Chown, install devtools & Clean up
-RUN chown -R node-red:root /usr/src/node-red && \
-    apt-get update && apt-get install -y build-essential libdbus-glib-1-dev libgirepository1.0-dev python3-dev python3 python3-pip pipx bluez usbutils && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libdbus-glib-1-dev \
+        libgirepository1.0-dev \
+        python3-dev \
+        python3 \
+        python3-pip \
+        bluez \
+        usbutils \
+        # python3-lgpio HIER ENTFERNEN
+        # Abhängigkeiten für lgpio (sollten meist schon da sein)
+        libgpiod2 \
+        && \
+    # Chown node_modules AFTER installing build tools
+    chown -R node-red:root /usr/src/node-red/node_modules && \
+    # Clean up apt cache and temp files
+    rm -rf /var/lib/apt/lists/* && \
     rm -r /tmp/*
 
-RUN npm config set cache /data/.npm --global
 
-RUN rm /usr/lib/python3.11/EXTERNALLY-MANAGED
-RUN pip3 install argparse pexpect jc
+RUN pip3 install --break-system-packages \
+    lgpio \
+    argparse \
+    pexpect \
+    jc
+
+# Die nächsten RUN Befehle bleiben wie sie waren
+RUN npm config set cache /data/.npm --global
+RUN rm /usr/lib/python3.11/EXTERNALLY-MANAGED 
+
 
 # Renogy BT Python library
 RUN git clone https://github.com/cyrils/renogy-bt.git /lib/renogy-bt && \

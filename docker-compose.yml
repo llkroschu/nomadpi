@@ -13,6 +13,7 @@ networks:
 
 services:
   portainer-ce:
+    platform: linux/arm64
     profiles:
       - core
     container_name: portainer-ce
@@ -28,6 +29,7 @@ services:
     - ./volumes/portainer-ce/data:/data
 
   portainer_agent:
+    platform: linux/arm64
     profiles:
       - core
     image: portainer/agent
@@ -40,6 +42,7 @@ services:
     restart: unless-stopped
   
   gpsd:
+    platform: linux/arm64
     profiles:
       - accessory
     container_name: gpsd
@@ -54,6 +57,7 @@ services:
     restart: unless-stopped
   
   nomadpi-core-api:
+    platform: linux/arm64
     privileged: true
     profiles:
       - core
@@ -77,6 +81,7 @@ services:
     ports:
       - "1880:1880"
     devices:
+      - /dev/gpiomem:/dev/gpiomem
       - /dev/i2c-1:/dev/i2c-1
     volumes:
       - ./volumes/nomadpi-core-api/data:/data
@@ -88,6 +93,7 @@ services:
       - /lib/udev/rules.d:/lib/udev/rules.d
   
   nomadpi-automation-api:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-automation-api
@@ -124,6 +130,7 @@ services:
       - ./volumes/mosquitto/pwfile:/mosquitto/pwfilie
   
   mariadb:
+    platform: linux/arm64
     profiles:
       - core
     build: ./services/mariadb/.
@@ -144,6 +151,7 @@ services:
     restart: unless-stopped
 
   nomadpi-react:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-react
@@ -157,6 +165,7 @@ services:
     restart: unless-stopped
   
   nomadpi-app-api:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-app-api
@@ -187,6 +196,7 @@ services:
       ZIGBEE_UDEV_KEY: ${ZIGBEE_UDEV_KEY}
   
   nomadpi-services-api:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-services-api
@@ -209,6 +219,7 @@ services:
       CORE_API_ROOT_URL: "http://nomadpi-core-api:1880"
 
   nomadpi-mqtt-hub:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-mqtt-hub
@@ -229,6 +240,7 @@ services:
       HUB_MQTT_TOPIC: ${HUB_MQTT_TOPIC}
   
   nomadpi-gpsd-to-mqtt:
+    platform: linux/arm64
     profiles:
       - accessory
     container_name: nomadpi-gpsd-to-mqtt
@@ -246,6 +258,7 @@ services:
       GPSD_HOST: gpsd
  
   nomadpi-butterfly-ai:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-butterfly-ai
@@ -289,6 +302,7 @@ services:
   #     start_period: 30s
   
   nomadpi-open-wake-word:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-open-wake-word
@@ -302,6 +316,7 @@ services:
     restart: unless-stopped
 
   frigate:
+    platform: linux/arm64
     profiles:
       - core
     container_name: frigate
@@ -331,6 +346,7 @@ services:
       FRIGATE_RTSP_PASSWORD: "password"
 
   cloudflare-tunnel:
+    platform: linux/arm64
     profiles:
       - accessory
     container_name: cloudflared-tunnel
@@ -341,6 +357,7 @@ services:
       - cloudflare_tunnel_token
 
   nextcloud-client:
+    platform: linux/arm64
     profiles:
       - accessory
     container_name: nextcloud-client
@@ -367,6 +384,7 @@ services:
       - nextcloud_password
 
   nomadpi-bluetooth-api:
+    platform: linux/arm64
     profiles:
       - core
     container_name: nomadpi-bluetooth-api
@@ -384,6 +402,7 @@ services:
     #   BLEAK_LOGGING: 1
 
   zigbee2mqtt:
+    platform: linux/arm64
     profiles:
       - accessory
     container_name: zigbee2mqtt
@@ -405,7 +424,7 @@ services:
     depends_on:
       - mosquitto
 
-secrets:
+secrets:    
   cloudflare_tunnel_token:
     file: ./volumes/secrets/cloudflare/tunnel_token
   nextcloud_host:

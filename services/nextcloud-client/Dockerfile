@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM --platform=linux/arm64 alpine:latest
 LABEL maintainer="juanignacioborda@gmail.com"
 ARG VCS_REF
 ARG BUILD_DATE

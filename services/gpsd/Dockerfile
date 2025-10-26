@@ -1,4 +1,4 @@
-FROM alpine
+FROM --platform=linux/arm64 alpine
 
 RUN apk add --no-cache \
       gpsd \

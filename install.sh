@@ -62,7 +62,7 @@ trap 'handle_error' ERR
         jq \
         apt-transport-https \
         ca-certificates \
-        software-properties-common
+        # software-properties-common
 
     update_progress 'Cloning nomadPi repositories'
 
